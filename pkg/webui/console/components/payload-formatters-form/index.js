@@ -27,6 +27,7 @@ import Input from '@ttn-lw/components/input'
 import CodeEditor from '@ttn-lw/components/code-editor'
 import Link from '@ttn-lw/components/link'
 import Notification from '@ttn-lw/components/notification'
+import Button from '@ttn-lw/components/button'
 
 import Yup from '@ttn-lw/lib/yup'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
@@ -34,7 +35,11 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import { address as addressRegexp } from '@console/lib/regexp'
 
-import { getDefaultGrpcServiceFormatter, getDefaultJavascriptFormatter } from './formatter-values'
+import {
+  getDefaultGrpcServiceFormatter,
+  getDefaultJavascriptFormatter,
+  getRepositoryJavascriptFormatter,
+} from './formatter-values'
 import TestForm from './test-form'
 
 import style from './payload-formatters-form.styl'
@@ -49,7 +54,9 @@ const m = defineMessages({
   appFormatterWarning: 'This option will affect both uplink and downlink formatter',
   setupSubTitle: 'Setup',
   defaultFormatter:
-    'Click <Link>here</Link> to modify the default payload formatter for this application. The payload formatter of this application is currently set to {formatter}',
+    'Click <Link>here</Link> to modify the default payload formatter for this application. The payload formatter of this application is currently set to `{defaultFormatter}`',
+  pasteRepositoryFormatter: 'Paste repository formatter',
+  pasteApplicationFormatter: 'Paste application formatter',
 })
 
 const FIELD_NAMES = {
@@ -201,24 +208,61 @@ class PayloadFormattersForm extends React.Component {
     }
   }
 
+  @bind
+  pastePayloadFormatter(app) {
+    const { defaultParameter, uplink } = this.props
+    const repositoryFormatter = getRepositoryJavascriptFormatter(uplink)
+    const applicationFormatter = defaultParameter
+      ? defaultParameter
+      : getDefaultJavascriptFormatter(uplink)
+    if (app && this.formRef !== null) {
+      return () =>
+        this.formRef?.current?.setFieldValue(FIELD_NAMES.JAVASCRIPT, applicationFormatter)
+    }
+
+    return () => this.formRef?.current?.setFieldValue(FIELD_NAMES.JAVASCRIPT, repositoryFormatter)
+  }
+
   get formatter() {
     const { defaultType } = this.props
     const { type } = this.state
-    console.log(defaultType === 'FORMATTER_JAVASCRIPT')
-    console.log(defaultType)
+    const showParameter =
+      type === TYPES.JAVASCRIPT ||
+      (type === TYPES.DEFAULT && defaultType === 'FORMATTER_JAVASCRIPT')
+    const isReadOnly = type === TYPES.DEFAULT && defaultType === 'FORMATTER_JAVASCRIPT'
 
-    if (type === TYPES.JAVASCRIPT || defaultType === 'FORMATTER_JAVASCRIPT') {
+    if (showParameter) {
       return (
-        <Form.Field
-          readOnly={defaultType === 'FORMATTER_JAVASCRIPT'}
-          required={!defaultType === 'FORMATTER_JAVASCRIPT'}
-          component={CodeEditor}
-          name={FIELD_NAMES.JAVASCRIPT}
-          title={m.formatterParameter}
-          height="10rem"
-          minLines={15}
-          maxLines={15}
-        />
+        <>
+          <Form.Field
+            readOnly={isReadOnly}
+            required
+            component={CodeEditor}
+            name={FIELD_NAMES.JAVASCRIPT}
+            title={m.formatterParameter}
+            height="10rem"
+            minLines={15}
+            maxLines={15}
+          />
+          {type === TYPES.JAVASCRIPT && (
+            <>
+              <Button
+                type="button"
+                message={m.pasteApplicationFormatter}
+                secondary
+                icon={'payload_formats'}
+                onClick={this.pastePayloadFormatter(true)}
+              />
+              <Button
+                type="button"
+                message={m.pasteRepositoryFormatter}
+                secondary
+                icon={'payload_formats'}
+                onClick={this.pastePayloadFormatter(false)}
+              />
+            </>
+          )}
+        </>
       )
     } else if (type === TYPES.GRPC) {
       return (
@@ -258,7 +302,7 @@ class PayloadFormattersForm extends React.Component {
 
   render() {
     const { initialType, initialParameter, uplink, allowReset, defaultType, appId, isDefaultType } =
-    this.props
+      this.props
 
     const { error, type, test } = this.state
 
@@ -270,7 +314,7 @@ class PayloadFormattersForm extends React.Component {
         initialType === TYPES.GRPC ? initialParameter : getDefaultGrpcServiceFormatter(uplink),
     }
     const options = allowReset ? formatterOptionsWithReset : formatterOptions
-    const formatter = defaultType
+    const defaultFormatter = defaultType.replace('FORMATTER_', '').toLowerCase()
 
     return (
       <Row>
@@ -285,6 +329,7 @@ class PayloadFormattersForm extends React.Component {
           >
             <Form.SubTitle title={m.setupSubTitle} />
             <Form.Field
+              disabled={type === TYPES.DEFAULT && defaultType === 'FORMATTER_REPOSITORY'}
               name={FIELD_NAMES.SELECT}
               title={m.formatterType}
               component={Select}
@@ -301,6 +346,7 @@ class PayloadFormattersForm extends React.Component {
                 small
                 info
                 content={m.defaultFormatter}
+                convertBackticks
                 messageValues={{
                   Link: msg => (
                     <Link
@@ -311,7 +357,7 @@ class PayloadFormattersForm extends React.Component {
                       {msg}
                     </Link>
                   ),
-                  formatter,
+                  defaultFormatter,
                 }}
               />
             )}
