@@ -2610,6 +2610,21 @@
       ]
     }
   },
+  "GatewayConfigurationService": {
+    "GetGatewayConfiguration": {
+      "file": "lorawan-stack/api/gateway_configuration.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/gcs/gateways/{gateway_ids.gateway_id}/configuration/{format}",
+          "parameters": [
+            "gateway_ids.gateway_id",
+            "format"
+          ]
+        }
+      ]
+    }
+  },
   "GatewayAccess": {
     "ListRights": {
       "file": "lorawan-stack/api/gateway_services.proto",
