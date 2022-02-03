@@ -16,6 +16,7 @@ import React from 'react'
 import bind from 'autobind-decorator'
 import { injectIntl, defineMessages } from 'react-intl'
 import { Col, Row } from 'react-grid-system'
+import { connect } from 'react-redux'
 
 import TYPES from '@console/constants/formatter-types'
 
@@ -35,11 +36,9 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import { address as addressRegexp } from '@console/lib/regexp'
 
-import {
-  getDefaultGrpcServiceFormatter,
-  getDefaultJavascriptFormatter,
-  getRepositoryJavascriptFormatter,
-} from './formatter-values'
+import { selectVersionIds } from '@console/store/selectors/devices'
+
+import { getDefaultGrpcServiceFormatter, getDefaultJavascriptFormatter } from './formatter-values'
 import TestForm from './test-form'
 
 import style from './payload-formatters-form.styl'
@@ -97,10 +96,22 @@ const validationSchema = Yup.object().shape({
     }),
 })
 
+@connect(state => {
+  const version_ids = selectVersionIds(state)
+  return {
+    version_ids,
+  }
+})
 class PayloadFormattersForm extends React.Component {
+  static propTypes = {
+    version_ids: PropTypes.shape({}),
+  }
+  static defaultProps = {
+    version_ids: {},
+  }
+
   constructor(props) {
     super(props)
-
     this.state = {
       type: props.initialType,
       error: undefined,
@@ -211,7 +222,7 @@ class PayloadFormattersForm extends React.Component {
   @bind
   pastePayloadFormatter(app) {
     const { defaultParameter, uplink } = this.props
-    const repositoryFormatter = getRepositoryJavascriptFormatter(uplink)
+    const repositoryFormatter = ''
     const applicationFormatter = defaultParameter
       ? defaultParameter
       : getDefaultJavascriptFormatter(uplink)
@@ -301,9 +312,17 @@ class PayloadFormattersForm extends React.Component {
   }
 
   render() {
-    const { initialType, initialParameter, uplink, allowReset, defaultType, appId, isDefaultType } =
-      this.props
-
+    const {
+      initialType,
+      initialParameter,
+      uplink,
+      allowReset,
+      defaultType,
+      appId,
+      isDefaultType,
+      version_ids,
+    } = this.props
+    console.log(version_ids)
     const { error, type, test } = this.state
 
     const initialValues = {
