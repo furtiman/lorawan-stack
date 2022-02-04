@@ -44,6 +44,7 @@ import {
   selectSelectedDeviceFormatters,
   selectSelectedDevice,
 } from '@console/store/selectors/devices'
+import { selectVersionIds } from '@console/store/selectors/devices'
 
 @connect(
   state => ({
@@ -53,6 +54,7 @@ import {
     link: selectApplicationLink(state),
     formatters: selectSelectedDeviceFormatters(state),
     decodeUplink: tts.As.decodeUplink,
+    version_ids: selectVersionIds(state),
   }),
   {
     updateDevice: attachPromise(updateDevice),
@@ -82,10 +84,12 @@ class DevicePayloadFormatters extends React.PureComponent {
       }),
     }).isRequired,
     updateDevice: PropTypes.func.isRequired,
+    version_ids: PropTypes.shape({}),
   }
 
   static defaultProps = {
     formatters: undefined,
+    version_ids: undefined,
   }
 
   constructor(props) {
@@ -166,9 +170,10 @@ class DevicePayloadFormatters extends React.PureComponent {
   }
 
   render() {
-    const { formatters, link, appId } = this.props
+    const { formatters, link, version_ids } = this.props
     const { type } = this.state
     const { default_formatters = {} } = link
+
     const formatterType = Boolean(formatters)
       ? formatters.up_formatter || PAYLOAD_FORMATTER_TYPES.NONE
       : PAYLOAD_FORMATTER_TYPES.DEFAULT
@@ -200,7 +205,7 @@ class DevicePayloadFormatters extends React.PureComponent {
           defaultParameter={appFormatterParameter}
           onTypeChange={this.onTypeChange}
           isDefaultType={isDefaultType}
-          appId={appId}
+          versionIds={version_ids}
         />
       </React.Fragment>
     )

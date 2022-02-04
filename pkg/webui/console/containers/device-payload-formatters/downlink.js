@@ -46,8 +46,7 @@ import {
   selectSelectedDeviceFormatters,
   selectSelectedDevice,
 } from '@console/store/selectors/devices'
-
-import messages from './messages'
+import { selectVersionIds } from '@console/store/selectors/devices'
 
 @connect(
   state => {
@@ -60,6 +59,7 @@ import messages from './messages'
       link: selectApplicationLink(state),
       formatters,
       encodeDownlink: tts.As.encodeDownlink,
+      version_ids: selectVersionIds(state),
     }
   },
   { updateDevice: attachPromise(updateDevice) },
@@ -88,10 +88,12 @@ class DevicePayloadFormatters extends React.PureComponent {
       }),
     }).isRequired,
     updateDevice: PropTypes.func.isRequired,
+    version_ids: PropTypes.shape({}),
   }
 
   static defaultProps = {
     formatters: undefined,
+    version_ids: undefined,
   }
 
   constructor(props) {
@@ -166,7 +168,7 @@ class DevicePayloadFormatters extends React.PureComponent {
   }
 
   render() {
-    const { formatters, link, appId } = this.props
+    const { formatters, link, version_ids } = this.props
     const { type } = this.state
     const { default_formatters = {} } = link
 
@@ -186,24 +188,6 @@ class DevicePayloadFormatters extends React.PureComponent {
     return (
       <React.Fragment>
         <IntlHelmet title={sharedMessages.payloadFormattersDownlink} />
-        {isDefaultType && (
-          <Notification
-            small
-            info
-            content={messages.defaultFormatter}
-            messageValues={{
-              Link: msg => (
-                <Link
-                  secondary
-                  key="manual-link"
-                  to={`/applications/${appId}/payload-formatters/downlink`}
-                >
-                  {msg}
-                </Link>
-              ),
-            }}
-          />
-        )}
         <PayloadFormattersForm
           uplink={false}
           linked
@@ -218,6 +202,8 @@ class DevicePayloadFormatters extends React.PureComponent {
           defaultType={appFormatterType}
           defaultParameter={appFormatterParameter}
           onTypeChange={this.onTypeChange}
+          isDefaultType={isDefaultType}
+          versionIds={version_ids}
         />
       </React.Fragment>
     )

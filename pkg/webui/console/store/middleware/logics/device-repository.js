@@ -84,10 +84,44 @@ const getTemplateLogic = createRequestLogic({
   },
 })
 
+const getRepositoryPayloadFormattersLogic = createRequestLogic({
+  type: repository.GET_REPO_PF,
+  process: async ({ action }) => {
+    const {
+      payload: { appId, version },
+    } = action
+
+    try {
+      const uplinkDecoder = await tts.Applications.Devices.Repository.getUplinkDecoder(
+        appId,
+        version,
+      )
+      const downlinkDecoder = await tts.Applications.Devices.Repository.getDownlinkDecoder(
+        appId,
+        version,
+      )
+      const downlinkEncoder = await tts.Applications.Devices.Repository.getDownlinkEncoder(
+        appId,
+        version,
+      )
+      const repositoryPayloadFormatters = {
+        ...uplinkDecoder,
+        ...downlinkDecoder,
+        ...downlinkEncoder,
+      }
+      return repositoryPayloadFormatters
+    } catch (error) {
+      // There is no codec for this end device.
+      return null
+    }
+  },
+})
+
 export default [
   listDeviceBrandsLogic,
   getDeviceBrandLogic,
   listDeviceModelsLogic,
   getDeviceModelLogic,
   getTemplateLogic,
+  getRepositoryPayloadFormattersLogic,
 ]
