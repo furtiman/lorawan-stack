@@ -43,8 +43,8 @@ import {
   selectSelectedDeviceId,
   selectSelectedDeviceFormatters,
   selectSelectedDevice,
+  selectVersionIds,
 } from '@console/store/selectors/devices'
-import { selectVersionIds } from '@console/store/selectors/devices'
 
 @connect(
   state => ({

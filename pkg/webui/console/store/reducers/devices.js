@@ -28,7 +28,6 @@ import {
   UPDATE_DEV_SUCCESS,
   RESET_DEV_SUCCESS,
   GET_DEVICE_EVENT_MESSAGE_SUCCESS,
-  GET_DEV_VERSION_IDS,
 } from '@console/store/actions/devices'
 import { GET_APP_EVENT_MESSAGE_SUCCESS } from '@console/store/actions/applications'
 

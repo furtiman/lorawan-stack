@@ -22,7 +22,7 @@ import {
 } from '@ttn-lw/lib/store/selectors/pagination'
 import { selectAsConfig, selectJsConfig, selectNsConfig } from '@ttn-lw/lib/selectors/env'
 
-import { GET_DEV_BASE, GET_DEVICES_LIST_BASE, GET_DEV_VERSION_IDS_BASE } from '@console/store/actions/devices'
+import { GET_DEV_BASE, GET_DEVICES_LIST_BASE } from '@console/store/actions/devices'
 
 import {
   createEventsSelector,

@@ -19,11 +19,9 @@ import { connect } from 'react-redux'
 import PAYLOAD_FORMATTER_TYPES from '@console/constants/formatter-types'
 import tts from '@console/api/tts'
 
-import Notification from '@ttn-lw/components/notification'
 import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
 import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 import toast from '@ttn-lw/components/toast'
-import Link from '@ttn-lw/components/link'
 
 import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 
@@ -45,8 +43,8 @@ import {
   selectSelectedDeviceId,
   selectSelectedDeviceFormatters,
   selectSelectedDevice,
+  selectVersionIds,
 } from '@console/store/selectors/devices'
-import { selectVersionIds } from '@console/store/selectors/devices'
 
 @connect(
   state => {
