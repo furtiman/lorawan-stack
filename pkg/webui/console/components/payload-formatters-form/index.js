@@ -54,7 +54,7 @@ const m = defineMessages({
   formatterType: 'Formatter type',
   formatterParameter: 'Formatter parameter',
   grpcFieldDescription: 'The address of the service to connect to',
-  appFormatter: 'Use application payload formatter  ',
+  appFormatter: 'Use application payload formatter',
   appFormatterWarning: 'This option will affect both uplink and downlink formatter',
   setupSubTitle: 'Setup',
   defaultFormatter:
@@ -102,26 +102,6 @@ const validationSchema = Yup.object().shape({
     }),
 })
 
-@connect(
-  (state, props) => {
-    const appId = selectSelectedApplicationId(state)
-    const repositoryPayloadFormatters = selectDeviceRepoPayloadFromatters(state)
-    const { versionIds } = props
-
-    return {
-      versionIds,
-      appId,
-      repositoryPayloadFormatters,
-    }
-  },
-  dispatch => ({
-    getRepositoryPayloadFormatters: (appId, versionIds) =>
-      dispatch(getRepositoryPayloadFormatters(appId, versionIds)),
-  }),
-)
-@withRequest(({ appId, versionIds, getRepositoryPayloadFormatters }) =>
-  getRepositoryPayloadFormatters(appId, versionIds),
-)
 class PayloadFormattersForm extends React.Component {
   constructor(props) {
     super(props)
@@ -234,7 +214,7 @@ class PayloadFormattersForm extends React.Component {
 
   @bind
   pastePayloadFormatter(app) {
-    const { defaultParameter, uplink, repositoryPayloadFormatters } = this.props
+    const { defaultParameter, uplink, repoFormatters } = this.props
     const applicationFormatter = defaultParameter
       ? defaultParameter
       : getDefaultJavascriptFormatter(uplink)
@@ -246,23 +226,24 @@ class PayloadFormattersForm extends React.Component {
     return () =>
       this.formRef?.current?.setFieldValue(
         FIELD_NAMES.JAVASCRIPT,
-        repositoryPayloadFormatters.formatter_parameter,
+        repoFormatters.formatter_parameter,
       )
   }
 
   get formatter() {
-    const { defaultType, repositoryPayloadFormatters } = this.props
+    const { defaultType, repoFormatters } = this.props
     const { type } = this.state
     const showParameter =
       type === TYPES.JAVASCRIPT ||
       (type === TYPES.DEFAULT && defaultType === 'FORMATTER_JAVASCRIPT')
     const showRepositoryParameter =
-      (type === TYPES.REPOSITORY && Boolean(repositoryPayloadFormatters)) ||
+      (type === TYPES.REPOSITORY && Boolean(repoFormatters)) ||
       (type === TYPES.DEFAULT && defaultType === 'FORMATTER_REPOSITORY')
     const isReadOnly =
       (type === TYPES.DEFAULT && defaultType === 'FORMATTER_JAVASCRIPT') ||
       type === TYPES.REPOSITORY ||
       (type === TYPES.DEFAULT && defaultType === 'FORMATTER_REPOSITORY')
+    const showButton = type === TYPES.JAVASCRIPT && defaultType === 'FORMATTER_NONE'
     const pasteApplicationFormatter = this.pastePayloadFormatter(true)
     const pasteRepositoryFormatter = this.pastePayloadFormatter(false)
 
@@ -279,21 +260,19 @@ class PayloadFormattersForm extends React.Component {
             minLines={15}
             maxLines={15}
           />
-          {type === TYPES.JAVASCRIPT && (
+          {showButton && (
             <>
               <Button
                 type="button"
                 message={m.pasteApplicationFormatter}
                 secondary
-                icon={'payload_formats'}
                 onClick={pasteApplicationFormatter}
               />
-              {Boolean(repositoryPayloadFormatters) && (
+              {Boolean(repoFormatters) && (
                 <Button
                   type="button"
                   message={m.pasteRepositoryFormatter}
                   secondary
-                  icon={'payload_formats'}
                   onClick={pasteRepositoryFormatter}
                 />
               )}
@@ -325,7 +304,7 @@ class PayloadFormattersForm extends React.Component {
           height="10rem"
           minLines={15}
           maxLines={15}
-          value={repositoryPayloadFormatters?.formatter_parameter}
+          value={repoFormatters?.formatter_parameter}
         />
       )
     }
@@ -452,7 +431,7 @@ PayloadFormattersForm.propTypes = {
   onSubmitSuccess: PropTypes.func,
   onTestSubmit: PropTypes.func,
   onTypeChange: PropTypes.func,
-  repositoryPayloadFormatters: PropTypes.shape({
+  repoFormatters: PropTypes.shape({
     formatter_parameter: PropTypes.string,
   }),
   uplink: PropTypes.bool.isRequired,
@@ -470,7 +449,7 @@ PayloadFormattersForm.defaultProps = {
   onTypeChange: () => null,
   appId: undefined,
   isDefaultType: undefined,
-  repositoryPayloadFormatters: undefined,
+  repoFormatters: undefined,
 }
 
 export default injectIntl(PayloadFormattersForm)

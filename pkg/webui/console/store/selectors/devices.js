@@ -60,7 +60,6 @@ export const isOtherClusterDevice = device => {
 
   return isOtherCluster
 }
-export const selectVersionIds = state => selectDeviceStore(state).version_ids
 
 // Derived.
 export const selectDeviceDerivedUplinkFrameCount = (state, appId, devId) => {

@@ -24,6 +24,7 @@ import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 import toast from '@ttn-lw/components/toast'
 
 import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import withRequest from '@ttn-lw/lib/components/with-request'
 
 import PayloadFormattersForm from '@console/components/payload-formatters-form'
 
@@ -34,6 +35,7 @@ import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 import { hexToBase64 } from '@console/lib/bytes'
 
 import { updateDevice } from '@console/store/actions/devices'
+import { getRepositoryPayloadFormatters } from '@console/store/actions/device-repository'
 
 import {
   selectSelectedApplicationId,
@@ -43,8 +45,8 @@ import {
   selectSelectedDeviceId,
   selectSelectedDeviceFormatters,
   selectSelectedDevice,
-  selectVersionIds,
 } from '@console/store/selectors/devices'
+import { selectDeviceRepoPayloadFromatters } from '@console/store/selectors/device-repository'
 
 @connect(
   state => ({
@@ -54,11 +56,16 @@ import {
     link: selectApplicationLink(state),
     formatters: selectSelectedDeviceFormatters(state),
     decodeUplink: tts.As.decodeUplink,
-    version_ids: selectVersionIds(state),
+    repositoryPayloadFormatters: selectDeviceRepoPayloadFromatters(state),
   }),
-  {
+  dispatch => ({
     updateDevice: attachPromise(updateDevice),
-  },
+    getRepositoryPayloadFormatters: (appId, versionIds) =>
+      dispatch(getRepositoryPayloadFormatters(appId, versionIds)),
+  }),
+)
+@withRequest(({ appId, device, getRepositoryPayloadFormatters }) =>
+  getRepositoryPayloadFormatters(appId, device.version_ids),
 )
 @withBreadcrumb('device.single.payload-formatters.uplink', props => {
   const { appId, devId } = props
@@ -83,13 +90,15 @@ class DevicePayloadFormatters extends React.PureComponent {
         up_formatter_parameter: PropTypes.string,
       }),
     }).isRequired,
+    repositoryPayloadFormatters: PropTypes.shape({
+      formatter_parameter: PropTypes.string,
+    }),
     updateDevice: PropTypes.func.isRequired,
-    version_ids: PropTypes.shape({}),
   }
 
   static defaultProps = {
     formatters: undefined,
-    version_ids: undefined,
+    repositoryPayloadFormatters: undefined,
   }
 
   constructor(props) {
@@ -170,7 +179,7 @@ class DevicePayloadFormatters extends React.PureComponent {
   }
 
   render() {
-    const { formatters, link, version_ids } = this.props
+    const { formatters, link, repositoryPayloadFormatters } = this.props
     const { type } = this.state
     const { default_formatters = {} } = link
 
@@ -205,7 +214,7 @@ class DevicePayloadFormatters extends React.PureComponent {
           defaultParameter={appFormatterParameter}
           onTypeChange={this.onTypeChange}
           isDefaultType={isDefaultType}
-          versionIds={version_ids}
+          repoFormatters={repositoryPayloadFormatters}
         />
       </React.Fragment>
     )
