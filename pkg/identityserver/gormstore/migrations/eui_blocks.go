@@ -21,6 +21,7 @@ import (
 	store "go.thethings.network/lorawan-stack/v3/pkg/identityserver/gormstore"
 )
 
+// EUIBlocks removes the unique index constraint from `type` field.
 type EUIBlocks struct{}
 
 // Name implements Migration.
@@ -34,7 +35,7 @@ func (m EUIBlocks) Apply(ctx context.Context, db *gorm.DB) error {
 	return nil
 }
 
-// Rollback implements migration. For the EntityContacts migration this is a no-op.
+// Rollback implements migration. For the EUIBlocks migration this is a no-op.
 func (m EUIBlocks) Rollback(ctx context.Context, db *gorm.DB) error {
 	return nil
 }
