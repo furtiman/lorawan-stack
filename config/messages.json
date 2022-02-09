@@ -5336,6 +5336,15 @@
       "file": "identityserver.go"
     }
   },
+  "error:pkg/identityserver:dev_eui_block_prefix_missing": {
+    "translations": {
+      "en": "issuing DevEUI's from a block enabled but no prefix configured"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "identityserver.go"
+    }
+  },
   "error:pkg/identityserver:dev_eui_issuing_not_enabled": {
     "translations": {
       "en": "DevEUI issuing not configured"
