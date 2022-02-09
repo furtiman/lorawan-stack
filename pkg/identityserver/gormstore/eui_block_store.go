@@ -78,22 +78,15 @@ func (s *euiStore) issueDevEUIAddressFromBlock(ctx context.Context) (*types.EUI6
 	var euiBlock EUIBlock
 	for {
 		// Get current value from DevEUI db.
-		query := s.query(ctx, EUIBlock{}).Where(EUIBlock{Type: "dev_eui"})
+		query := s.query(ctx, EUIBlock{}).
+			Where(`"eui_blocks"."type"='dev_eui' AND "eui_blocks"."current_counter" <= "eui_blocks"."end_counter"`)
 		if err := query.First(&euiBlock).Error; err != nil {
-			return nil, err
-		}
-		// Check if DevEUI block limit exists.
-		result := s.query(ctx, EUIBlock{}).
-			Where(`"eui_blocks"."type"='dev_eui' AND "eui_blocks"."current_counter" <= "eui_blocks"."end_counter"`).
-			Update("current_counter", gorm.Expr("current_counter + ?", 1))
-		if err := result.Error; err != nil {
-			return nil, err
-		}
-		if result.RowsAffected == 0 {
 			return nil, errMaxGlobalEUILimitReached.New()
 		}
-
-		devEUIResult.UnmarshalNumber(euiBlock.StartEUI.toPB().MarshalNumber() | uint64(euiBlock.CurrentCounter))
+		euiBlock.CurrentCounter++
+		query.Save(euiBlock)
+		devEUI := euiBlock.CurrentCounter - 1
+		devEUIResult.UnmarshalNumber(euiBlock.StartEUI.toPB().MarshalNumber() | uint64(devEUI))
 		deviceQuery := s.query(ctx, EndDevice{}).Where(EndDevice{
 			DevEUI: eui(&devEUIResult),
 		})
@@ -107,39 +100,30 @@ func (s *euiStore) issueDevEUIAddressFromBlock(ctx context.Context) (*types.EUI6
 	}
 }
 
-// CreateEUIBlock configures the identity server with a new block of EUI addresses to be issued.
-func (s *euiStore) CreateEUIBlock(ctx context.Context, euiType string, block types.EUI64Prefix, initCounterValue int64) (err error) {
-	defer trace.StartRegion(ctx, "create eui block").End()
-
-	var currentAddressBlock EUIBlock
-	query := s.query(ctx, EUIBlock{}).Where(EUIBlock{Type: euiType})
-	// Check if there is already an address block of same EUI type configured.
-	err = query.First(&currentAddressBlock).Error
-	if err == nil {
-		// If same address block already configured, skip initialization.
-		if block.EUI64.Equal(*currentAddressBlock.StartEUI.toPB()) {
-			return nil
-		}
-		// If a different block configured, update the block in the database.
-		return query.Select("start_eui", "end_counter", "current_counter").Save(
-			&EUIBlock{
-				StartEUI:       *eui(&block.EUI64),
-				MaxCounter:     getMaxCounter(block),
-				CurrentCounter: initCounterValue,
-			},
-		).Error
-	} else if gorm.IsRecordNotFoundError(err) {
-		// If no block found, create a new block in the database.
-		return s.query(ctx, EUIBlock{}).Save(
-			&EUIBlock{
-				Type:           euiType,
-				StartEUI:       *eui(&block.EUI64),
-				MaxCounter:     getMaxCounter(block),
-				CurrentCounter: initCounterValue,
-			},
-		).Error
+func (s *euiStore) createEUIBlock(ctx context.Context, euiType string, block types.EUI64Prefix, initCounterValue int64) (err error) {
+	euiBlock := &EUIBlock{
+		Type:           euiType,
+		StartEUI:       *eui(&block.EUI64),
+		MaxCounter:     getMaxCounter(block),
+		CurrentCounter: initCounterValue,
 	}
-	return err
+	return s.query(ctx, EUIBlock{}).Create(&euiBlock).Error
+}
+
+// InitializeDevEUIBlock initializes the block in IS db based on the configured block prefix
+func (s *euiStore) InitializeDevEUIBlock(ctx context.Context, configPrefix types.EUI64Prefix, initCounter int64) error {
+	defer trace.StartRegion(ctx, "initialize eui block").End()
+	var block EUIBlock
+	if err := s.query(ctx, EUIBlock{}).
+		Where(EUIBlock{Type: "dev_eui", StartEUI: *eui(&configPrefix.EUI64)}).
+		First(&block).Error; err != nil {
+		// If block is not found, create it
+		if gorm.IsRecordNotFoundError(err) {
+			return s.createEUIBlock(ctx, "dev_eui", configPrefix, initCounter)
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *euiStore) IssueDevEUIForApplication(ctx context.Context, ids *ttnpb.ApplicationIdentifiers, applicationLimit int) (*types.EUI64, error) {

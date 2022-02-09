@@ -142,7 +142,10 @@ func createAccountAppStore(db *gorm.DB) account_store.Interface {
 	}
 }
 
-var errDBNeedsMigration = errors.Define("db_needs_migration", "the database needs to be migrated")
+var (
+	errDBNeedsMigration = errors.Define("db_needs_migration", "the database needs to be migrated")
+	errNoDevEUIPrefix   = errors.Define("dev_eui_block_prefix_missing", "issuing DevEUI's from a block enabled but no prefix configured")
+)
 
 // New returns new *IdentityServer.
 func New(c *component.Component, config *Config) (is *IdentityServer, err error) {
@@ -172,12 +175,11 @@ func New(c *component.Component, config *Config) (is *IdentityServer, err error)
 	}
 
 	if is.config.DevEUIBlock.Enabled {
-		err := gormstore.Transact(is.Context(), is.db, func(db *gorm.DB) error {
-			err = gormstore.GetEUIStore(db).CreateEUIBlock(is.Context(), "dev_eui", is.config.DevEUIBlock.Prefix, is.config.DevEUIBlock.InitCounter)
-			if err != nil {
-				return err
-			}
-			return nil
+		if is.config.DevEUIBlock.Prefix.IsZero() {
+			return nil, errNoDevEUIPrefix.New()
+		}
+		err := is.withDatabase(is.Context(), func(db *gorm.DB) error {
+			return gormstore.GetEUIStore(db).InitializeDevEUIBlock(is.Context(), is.config.DevEUIBlock.Prefix, is.config.DevEUIBlock.InitCounter)
 		})
 		if err != nil {
 			return nil, err

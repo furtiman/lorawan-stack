@@ -38,9 +38,9 @@ func (st *StoreTest) TestEUIStore(t *T) {
 		t.Fatal("Store does not implement EUIStore")
 	}
 
-	t.Run("CreateEUIBlock", func(t *T) {
+	t.Run("InitializeDevEUIBlock", func(t *T) {
 		a, ctx := test.New(t)
-		err := s.CreateEUIBlock(ctx, "dev_eui", types.EUI64Prefix{
+		err := s.InitializeDevEUIBlock(ctx, types.EUI64Prefix{
 			EUI64:  types.EUI64{1, 1, 1, 1, 1, 1, 0, 0},
 			Length: 62,
 		}, 1)
@@ -83,24 +83,18 @@ func (st *StoreTest) TestEUIStore(t *T) {
 		}
 	})
 
-	t.Run("CreateEUIBlock_Extra", func(t *T) {
-		// FIXME: CreateEUIBlock updates an EUI block instead of creating a new one (https://github.com/TheThingsNetwork/lorawan-stack/issues/5045).
-		t.Skip("CreateEUIBlock updates an EUI block instead of creating a new one")
-		// a, ctx := test.New(t)
-		// err := s.CreateEUIBlock(ctx, "dev_eui", types.EUI64Prefix{
-		// 	EUI64:  types.EUI64{1, 1, 1, 1, 1, 1, 1, 0},
-		// 	Length: 62,
-		// }, 0)
-		// a.So(err, should.BeNil)
+	t.Run("InitializeDevEUIBlock_Extra", func(t *T) {
+		a, ctx := test.New(t)
+		err := s.InitializeDevEUIBlock(ctx, types.EUI64Prefix{
+			EUI64:  types.EUI64{1, 1, 1, 1, 0, 0, 0, 0},
+			Length: 32,
+		}, 1)
+		a.So(err, should.BeNil)
 	})
 
-	t.Run("IssueDevEUIForApplication_ExtraBlock", func(t *T) {
-		// TODO: See CreateEUIBlock_Extra.
-		t.Skip("See CreateEUIBlock_Extra")
-		// a, ctx := test.New(t)
-		// eui, err := s.IssueDevEUIForApplication(ctx, app1.GetIds(), 3)
-		// if a.So(err, should.BeNil) && a.So(eui, should.NotBeNil) {
-		// 	a.So(*eui, should.Equal, types.EUI64{1, 1, 1, 1, 1, 1, 1, 0})
-		// }
+	t.Run("IssueDevEUIForApplication_Other", func(t *T) {
+		a, ctx := test.New(t)
+		_, err := s.IssueDevEUIForApplication(ctx, app1.GetIds(), 3)
+		a.So(err, should.BeNil)
 	})
 }
