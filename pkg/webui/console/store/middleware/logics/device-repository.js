@@ -14,6 +14,8 @@
 
 import tts from '@console/api/tts'
 
+import { isNotFoundError } from '@ttn-lw/lib/errors/utils'
+
 import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
 
 import * as repository from '@console/store/actions/device-repository'
@@ -91,6 +93,7 @@ const getRepositoryPayloadFormattersLogic = createRequestLogic({
       payload: { appId, version },
     } = action
 
+    let repositoryPayloadFormatters
     try {
       const uplinkDecoder = await tts.Applications.Devices.Repository.getUplinkDecoder(
         appId,
@@ -104,15 +107,18 @@ const getRepositoryPayloadFormattersLogic = createRequestLogic({
         appId,
         version,
       )
-      const repositoryPayloadFormatters = {
+      repositoryPayloadFormatters = {
         ...uplinkDecoder,
         ...downlinkDecoder,
         ...downlinkEncoder,
       }
       return repositoryPayloadFormatters
     } catch (error) {
-      // There is no codec for this end device.
-      return null
+      if (isNotFoundError(error) && typeof repositoryPayloadFormatters !== 'undefined') {
+        return repositoryPayloadFormatters
+      }
+
+      throw error
     }
   },
 })
