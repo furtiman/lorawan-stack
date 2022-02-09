@@ -16,7 +16,6 @@ import React from 'react'
 import bind from 'autobind-decorator'
 import { injectIntl, defineMessages } from 'react-intl'
 import { Col, Row } from 'react-grid-system'
-import { connect } from 'react-redux'
 
 import TYPES from '@console/constants/formatter-types'
 
@@ -30,18 +29,11 @@ import Link from '@ttn-lw/components/link'
 import Notification from '@ttn-lw/components/notification'
 import Button from '@ttn-lw/components/button'
 
-import withRequest from '@ttn-lw/lib/components/with-request'
-
 import Yup from '@ttn-lw/lib/yup'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
 
 import { address as addressRegexp } from '@console/lib/regexp'
-
-import { getRepositoryPayloadFormatters } from '@console/store/actions/device-repository'
-
-import { selectDeviceRepoPayloadFromatters } from '@console/store/selectors/device-repository'
-import { selectSelectedApplicationId } from '@console/store/selectors/applications'
 
 import { getDefaultGrpcServiceFormatter, getDefaultJavascriptFormatter } from './formatter-values'
 import TestForm from './test-form'

@@ -15,7 +15,6 @@
 import tts from '@console/api/tts'
 
 import { isNotFoundError } from '@ttn-lw/lib/errors/utils'
-
 import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
 
 import * as repository from '@console/store/actions/device-repository'
