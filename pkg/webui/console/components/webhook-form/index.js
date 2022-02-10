@@ -54,6 +54,7 @@ import {
   hasBasicAuth,
   isBasicAuth,
 } from './mapping'
+import user from '@account/store/middleware/user'
 
 const pathPlaceholder = '/path/to/webhook'
 
@@ -414,14 +415,17 @@ export default class WebhookForm extends Component {
           {this.state.shouldShowCredentialsInput && (
             <Form.FieldContainer horizontal>
               <Form.Field
+                data-test-id="basic-auth-username"
                 required
                 title={sharedMessages.username}
                 name="_headers"
                 decode={decodeBasicAuthHeaderUsername}
                 encode={encodeBasicAuthUsername}
+                onChange={usernameCheck}
                 component={Input}
               />
               <Form.Field
+                data-test-id="basic-auth-password"
                 required
                 title={sharedMessages.password}
                 name="_headers"

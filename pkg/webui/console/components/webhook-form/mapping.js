@@ -32,6 +32,7 @@ export const encodeMessageType = formValue => {
   if (formValue && formValue.enabled) {
     return { enabled: true, path: formValue.value }
   }
+
   return { enabled: false, path: '' }
 }
 
@@ -109,6 +110,7 @@ export const mapCredentialsToAuthHeader = (forUsername, value, currentHeaders) =
       return newHeaders
     }
   }
+
   return currentHeaders
 }
 
