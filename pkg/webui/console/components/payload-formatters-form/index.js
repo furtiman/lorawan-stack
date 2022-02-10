@@ -18,7 +18,6 @@ import { injectIntl, defineMessages } from 'react-intl'
 import { Col, Row } from 'react-grid-system'
 
 import TYPES from '@console/constants/formatter-types'
-import FORMATTER_NAMES from '@console/constants/formatter-names'
 
 import Select from '@ttn-lw/components/select'
 import Form from '@ttn-lw/components/form'
@@ -35,6 +34,7 @@ import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
 
 import { address as addressRegexp } from '@console/lib/regexp'
+import FORMATTER_NAMES from '@console/lib/payload-formatter-messages'
 
 import { getDefaultGrpcServiceFormatter, getDefaultJavascriptFormatter } from './formatter-values'
 import TestForm from './test-form'
@@ -230,10 +230,7 @@ class PayloadFormattersForm extends React.Component {
     const showRepositoryParameter =
       (type === TYPES.REPOSITORY && Boolean(repoFormatters)) ||
       (type === TYPES.DEFAULT && defaultType === 'FORMATTER_REPOSITORY')
-    const isReadOnly =
-      (type === TYPES.DEFAULT && defaultType === 'FORMATTER_JAVASCRIPT') ||
-      type === TYPES.REPOSITORY ||
-      (type === TYPES.DEFAULT && defaultType === 'FORMATTER_REPOSITORY')
+    const isReadOnly = type !== TYPES.JAVASCRIPT
     const showPasteRepoButton =
       repoFormatters !== undefined && Object.keys(repoFormatters).length !== 0
 
