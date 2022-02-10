@@ -32,9 +32,9 @@ import Button from '@ttn-lw/components/button'
 import Yup from '@ttn-lw/lib/yup'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
+import FORMATTER_NAMES from '@ttn-lw//lib/payload-formatter-messages'
 
 import { address as addressRegexp } from '@console/lib/regexp'
-import FORMATTER_NAMES from '@console/lib/payload-formatter-messages'
 
 import { getDefaultGrpcServiceFormatter, getDefaultJavascriptFormatter } from './formatter-values'
 import TestForm from './test-form'
