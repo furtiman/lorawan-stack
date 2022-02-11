@@ -285,7 +285,7 @@ class PayloadFormattersForm extends React.Component {
     } else if (showRepositoryParameter) {
       return (
         <Form.Field
-          readOnly={isReadOnly}
+          readOnly
           component={CodeEditor}
           title={m.formatterParameter}
           name={FIELD_NAMES.REPOSITORY}
