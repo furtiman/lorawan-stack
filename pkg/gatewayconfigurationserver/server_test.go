@@ -32,6 +32,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/fetch"
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	. "go.thethings.network/lorawan-stack/v3/pkg/gatewayconfigurationserver"
@@ -44,6 +45,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -235,6 +237,145 @@ func TestWeb(t *testing.T) {
 						gtw, err := is.GatewayRegistry().Get(ctx, &ttnpb.GetGatewayRequest{GatewayIds: &tc.ID})
 						a.So(err, should.BeNil)
 						a.So(string(b), should.Equal, cpfLorafwdConfig(gtw))
+					}
+				})
+			})
+		}
+	})
+}
+
+func TestGRPC(t *testing.T) {
+	ctx := log.NewContext(test.Context(), test.GetLogger(t))
+	is, isAddr, closeIS := mockis.New(ctx)
+	defer closeIS()
+
+	fpConf := config.FrequencyPlansConfig{
+		ConfigSource: "static",
+		Static:       test.StaticFrequencyPlans,
+	}
+	fps := frequencyplans.NewStore(test.Must(fpConf.Fetcher(ctx, config.BlobConfig{}, test.HTTPClientProvider)).(fetch.Interface))
+
+	conf := &component.Config{
+		ServiceBase: config.ServiceBase{
+			HTTP: config.HTTP{
+				Listen: ":0",
+			},
+			FrequencyPlans: fpConf,
+			Cluster: cluster.Config{
+				IdentityServer: isAddr,
+			},
+		},
+	}
+	c := componenttest.NewComponent(t, conf)
+	c.AddContextFiller(func(ctx context.Context) context.Context {
+		ctx = newContextWithRightsFetcher(ctx)
+		return ctx
+	})
+
+	test.Must(New(c, testConfig))
+	componenttest.StartComponent(t, c)
+	defer c.Close()
+
+	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
+
+	mustMarshal := func(b []byte, err error) []byte { return test.Must(b, err).([]byte) }
+	marshalJSON := func(v interface{}) string {
+		return string(mustMarshal(json.Marshal(v)))
+	}
+	marshalText := func(v encoding.TextMarshaler) string {
+		return string(mustMarshal(v.MarshalText()))
+	}
+	semtechUDPConfig := func(gtw *ttnpb.Gateway) string {
+		return marshalJSON(test.Must(semtechudp.Build(gtw, fps)).(*semtechudp.Config))
+	}
+	cpfLoradConfig := func(gtw *ttnpb.Gateway) string {
+		return marshalJSON(test.Must(cpf.BuildLorad(gtw, fps)).(*cpf.LoradConfig))
+	}
+	cpfLorafwdConfig := func(gtw *ttnpb.Gateway) string {
+		return marshalText(test.Must(cpf.BuildLorafwd(gtw)).(*cpf.LorafwdConfig))
+	}
+
+	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
+	t.Run("Authorization", func(t *testing.T) {
+		for _, tc := range []struct {
+			Name         string
+			ID           *ttnpb.GatewayIdentifiers
+			Key          string
+			ErrAssertion func(error) bool
+		}{
+			{
+				Name: "Valid",
+				ID:   &registeredGatewayID,
+				Key:  registeredGatewayKey,
+			},
+			{
+				Name:         "InvalidKey",
+				ID:           &registeredGatewayID,
+				Key:          "invalid key",
+				ErrAssertion: errors.IsPermissionDenied,
+			},
+			{
+				Name:         "InvalidIDAndKey",
+				ID:           &ttnpb.GatewayIdentifiers{GatewayId: "--invalid-id"},
+				Key:          "invalid key",
+				ErrAssertion: errors.IsInvalidArgument,
+			},
+		} {
+			is.GatewayRegistry().Add(ctx, registeredGatewayID, registeredGatewayKey, false, false, ttnpb.Right_RIGHT_GATEWAY_INFO)
+			t.Run(tc.Name, func(t *testing.T) {
+				a := assertions.New(t)
+				creds := grpc.PerRPCCredentials(rpcmetadata.MD{
+					AuthType:      "Bearer",
+					AuthValue:     tc.Key,
+					AllowInsecure: true,
+				})
+				client := ttnpb.NewGatewayConfigurationServiceClient(c.LoopbackConn())
+				a.So(client, should.NotBeNil)
+
+				t.Run("invalid format", func(t *testing.T) {
+					_, err := client.GetGatewayConfiguration(ctx, &ttnpb.GetGatewayConfigurationRequest{GatewayIds: tc.ID}, creds)
+					t.Log(err)
+					if tc.ErrAssertion != nil {
+						a.So(tc.ErrAssertion(err), should.BeTrue)
+					} else {
+						a.So(errors.IsInvalidArgument(err), should.BeTrue)
+					}
+				})
+				t.Run("semtechudp", func(t *testing.T) {
+					resp, err := client.GetGatewayConfiguration(ctx, &ttnpb.GetGatewayConfigurationRequest{GatewayIds: tc.ID, Format: "semtechudp"}, creds)
+					if tc.ErrAssertion != nil {
+						a.So(tc.ErrAssertion(err), should.BeTrue)
+					} else {
+						a.So(err, should.BeNil)
+
+						gtw, err := is.GatewayRegistry().Get(ctx, &ttnpb.GetGatewayRequest{GatewayIds: tc.ID})
+						a.So(err, should.BeNil)
+						a.So(string(resp.Contents), should.Resemble, semtechUDPConfig(gtw))
+					}
+				})
+
+				t.Run("cpf/lorad", func(t *testing.T) {
+					resp, err := client.GetGatewayConfiguration(ctx, &ttnpb.GetGatewayConfigurationRequest{GatewayIds: tc.ID, Format: "lorad"}, creds)
+					if tc.ErrAssertion != nil {
+						t.Log(err)
+						a.So(tc.ErrAssertion(err), should.BeTrue)
+					} else {
+						a.So(err, should.BeNil)
+						gtw, err := is.GatewayRegistry().Get(ctx, &ttnpb.GetGatewayRequest{GatewayIds: tc.ID})
+						a.So(err, should.BeNil)
+						a.So(string(resp.Contents), should.Resemble, cpfLoradConfig(gtw))
+					}
+				})
+
+				t.Run("cpf/lorafwd", func(t *testing.T) {
+					resp, err := client.GetGatewayConfiguration(ctx, &ttnpb.GetGatewayConfigurationRequest{GatewayIds: tc.ID, Format: "lorafwd"}, creds)
+					if tc.ErrAssertion != nil {
+						a.So(tc.ErrAssertion(err), should.BeTrue)
+					} else {
+						a.So(err, should.BeNil)
+						gtw, err := is.GatewayRegistry().Get(ctx, &ttnpb.GetGatewayRequest{GatewayIds: tc.ID})
+						a.So(err, should.BeNil)
+						a.So(string(resp.Contents), should.Resemble, cpfLorafwdConfig(gtw))
 					}
 				})
 			})
