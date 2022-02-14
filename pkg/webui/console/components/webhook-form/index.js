@@ -54,7 +54,6 @@ import {
   hasBasicAuth,
   isBasicAuth,
 } from './mapping'
-import user from '@account/store/middleware/user'
 
 const pathPlaceholder = '/path/to/webhook'
 
