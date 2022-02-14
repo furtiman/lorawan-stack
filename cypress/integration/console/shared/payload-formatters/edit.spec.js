@@ -23,13 +23,14 @@ describe('Payload formatters', () => {
     password_confirm: 'ABCDefg123!',
   }
 
-  const endDeviceId = 'device-all-components'
-
+  let endDeviceId
   before(() => {
     cy.dropAndSeedDatabase()
     cy.createUser(user)
     cy.createApplication(application, userId)
-    cy.createMockDeviceAllComponents(applicationId)
+    cy.createMockDeviceAllComponents(applicationId).then(body => {
+      endDeviceId = body.end_device.ids.device_id
+    })
   })
 
   describe('Application', () => {
@@ -239,6 +240,7 @@ describe('Payload formatters', () => {
   describe('End Devices', () => {
     describe('Uplink', () => {
       beforeEach(() => {
+        Cypress.on('uncaught:exception', () => false)
         cy.loginConsole({ user_id: userId, password: user.password })
       })
 
