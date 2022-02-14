@@ -107,14 +107,6 @@ const validationSchema = Yup.object().shape({
       .required(sharedMessages.validateRequired),
   }),
   format: Yup.string().required(sharedMessages.validateRequired),
-  '_headers#basic-auth-username': Yup.array()
-    .of(
-      Yup.object({
-        key: Yup.string(),
-        value: Yup.string(),
-      }),
-    )
-    .required(sharedMessages.validateRequired),
   _headers: Yup.array()
     .of(
       Yup.object({

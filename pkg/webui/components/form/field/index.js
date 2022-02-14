@@ -216,13 +216,7 @@ class FormField extends React.Component {
     const hasTooltip = Boolean(tooltipId)
     const hasTitle = Boolean(title)
 
-    let showError
-    if (name.includes('#') && name in this.context.errors) {
-      showError = true
-    } else {
-      showError = fieldTouched && hasError
-    }
-
+    const showError = fieldTouched && hasError
     const showWarning = !hasError && hasWarning
     const showDescription = !showError && !showWarning && hasDescription
 
