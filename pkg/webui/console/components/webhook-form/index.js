@@ -85,6 +85,8 @@ const m = defineMessages({
   messagePathValidateTooLong: 'Enabled message path must be at most 64 characters',
   basicAuthCheckbox: 'Use basic access authentication (basic auth)',
   requestBasicAuth: 'Request authentication',
+  basicAuthUsername:
+    'The username and password are combined with a single colon (:). This means that the username itself cannot contain a colon.',
 })
 
 const messageCheck = message => {
@@ -106,11 +108,19 @@ const validationSchema = Yup.object().shape({
       .required(sharedMessages.validateRequired),
   }),
   format: Yup.string().required(sharedMessages.validateRequired),
+  '_headers#basic-auth-username': Yup.array()
+    .of(
+      Yup.object({
+        key: Yup.string(),
+        value: Yup.string(),
+      }),
+    )
+    .required(sharedMessages.validateRequired),
   _headers: Yup.array()
     .of(
       Yup.object({
-        value: Yup.string(),
         key: Yup.string(),
+        value: Yup.string(),
       }),
     )
     .default([]),
@@ -418,10 +428,10 @@ export default class WebhookForm extends Component {
                 data-test-id="basic-auth-username"
                 required
                 title={sharedMessages.username}
-                name="_headers"
+                name="_headers#basic-auth-username"
+                warning={m.basicAuthUsername}
                 decode={decodeBasicAuthHeaderUsername}
                 encode={encodeBasicAuthUsername}
-                onChange={usernameCheck}
                 component={Input}
               />
               <Form.Field

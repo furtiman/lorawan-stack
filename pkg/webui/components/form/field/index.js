@@ -146,7 +146,8 @@ class FormField extends React.Component {
     const { name, onChange, encode } = this.props
     const { setFieldValue, setFieldTouched } = this.context
 
-    const fieldValue = getIn(this.context.values, name)
+    const noHashName = name.split('#')[0]
+    const fieldValue = getIn(this.context.values, noHashName)
     const newValue = encode(this.extractValue(value), fieldValue)
     let isSyntheticEvent = false
 
@@ -202,8 +203,10 @@ class FormField extends React.Component {
     } = this.props
     const { disabled: formDisabled } = this.context
 
-    const fieldValue = decode(getIn(this.context.values, name))
+    const noHashName = name.split('#')[0]
+    const fieldValue = decode(getIn(this.context.values, noHashName))
     const fieldError = getIn(this.context.errors, name)
+
     const fieldTouched = getIn(this.context.touched, name) || false
     const fieldDisabled = disabled || formDisabled
 
@@ -213,7 +216,13 @@ class FormField extends React.Component {
     const hasTooltip = Boolean(tooltipId)
     const hasTitle = Boolean(title)
 
-    const showError = fieldTouched && hasError
+    let showError
+    if (name.includes('#') && name in this.context.errors) {
+      showError = true
+    } else {
+      showError = fieldTouched && hasError
+    }
+
     const showWarning = !hasError && hasWarning
     const showDescription = !showError && !showWarning && hasDescription
 
